@@ -4,7 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../services/auth_service.dart';
 import '../../services/location_service.dart';
-import '../../services/firestore_service.dart';
+import '../../services/trip_service.dart';
 import '../trip/trip_screen.dart';
 import '../expenses/expenses_screen.dart';
 import '../sos/sos_screen.dart';
@@ -121,8 +121,8 @@ class _DashboardTabState extends State<DashboardTab> {
            ),
          ],
       ),
-      body: Consumer2<LocationService, FirestoreService>(
-        builder: (context, locationService, firestoreService, child) {
+      body: Consumer2<LocationService, TripService>(
+        builder: (context, locationService, tripService, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -148,7 +148,7 @@ class _DashboardTabState extends State<DashboardTab> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: firestoreService.isTripActive 
+                                color: tripService.isTripActive 
                                     ? Colors.green 
                                     : Colors.orange,
                                 shape: BoxShape.circle,
@@ -156,7 +156,7 @@ class _DashboardTabState extends State<DashboardTab> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              firestoreService.isTripActive 
+                              tripService.isTripActive 
                                   ? 'Trip Active' 
                                   : 'Available',
                               style: const TextStyle(fontSize: 16),

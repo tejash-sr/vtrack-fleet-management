@@ -10,19 +10,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   
-  bool _isSignUp = false;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
     _usernameController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -30,35 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     
     final authService = Provider.of<AuthService>(context, listen: false);
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    
-    final result = await authService.signIn(email, password);
-    
-    if (!mounted) return;
-    
-    if (result == null) {
-      // Navigate to home screen
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $result'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
-    
-    final authService = Provider.of<AuthService>(context, listen: false);
     final username = _usernameController.text.trim();
-    final email = _emailController.text.trim();
     final password = _passwordController.text;
     
-    final result = await authService.signUp(username, email, password);
+    final result = await authService.signIn(username, password);
     
     if (!mounted) return;
     
@@ -106,9 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 30),
                 
-                Text(
-                  _isSignUp ? 'Create Account' : 'Welcome Back',
-                  style: const TextStyle(
+                const Text(
+                  'Driver Login',
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -117,9 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 10),
                 
-                Text(
-                  _isSignUp ? 'Sign up to get started' : 'Sign in to continue',
-                  style: const TextStyle(
+                const Text(
+                  'Sign in to continue',
+                  style: TextStyle(
                     fontSize: 16,
                     color: Colors.white70,
                   ),
@@ -127,51 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 40),
                 
-                // Username Input (only for sign up)
-                if (_isSignUp) ...[
-                  TextFormField(
-                    controller: _usernameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      hintText: 'Enter your username',
-                      labelStyle: const TextStyle(color: Colors.white70),
-                      hintStyle: const TextStyle(color: Colors.white54),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white54),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white54),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your username';
-                      }
-                      if (value.trim().length < 3) {
-                        return 'Username must be at least 3 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                ],
-                
-                // Email Input
+                // Username Input
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _usernameController,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    hintText: 'Enter your email',
+                    labelText: 'Username',
+                    hintText: 'Enter your username',
+                    prefixIcon: const Icon(Icons.person, color: Colors.white70),
                     labelStyle: const TextStyle(color: Colors.white70),
                     hintStyle: const TextStyle(color: Colors.white54),
                     border: OutlineInputBorder(
@@ -189,10 +124,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
+                      return 'Please enter your username';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
+                    if (value.trim().length < 3) {
+                      return 'Username must be at least 3 characters';
                     }
                     return null;
                   },
@@ -208,6 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     hintText: 'Enter your password',
+                    prefixIcon: const Icon(Icons.lock, color: Colors.white70),
                     labelStyle: const TextStyle(color: Colors.white70),
                     hintStyle: const TextStyle(color: Colors.white54),
                     border: OutlineInputBorder(
@@ -247,16 +183,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Sign In/Sign Up Button
+                // Sign In Button
                 Consumer<AuthService>(
                   builder: (context, authService, child) {
                     return SizedBox(
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: authService.isLoading 
-                            ? null 
-                            : (_isSignUp ? _signUp : _signIn),
+                        onPressed: authService.isLoading ? null : _signIn,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.blue[900],
@@ -266,9 +200,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: authService.isLoading
                             ? const CircularProgressIndicator(color: Colors.blue)
-                            : Text(
-                                _isSignUp ? 'Sign Up' : 'Sign In',
-                                style: const TextStyle(
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -280,21 +214,32 @@ class _LoginScreenState extends State<LoginScreen> {
                 
                 const SizedBox(height: 20),
                 
-                // Toggle between Sign In and Sign Up
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isSignUp = !_isSignUp;
-                      _emailController.clear();
-                      _passwordController.clear();
-                      _usernameController.clear();
-                    });
-                  },
-                  child: Text(
-                    _isSignUp 
-                        ? 'Already have an account? Sign In'
-                        : 'Don\'t have an account? Sign Up',
-                    style: const TextStyle(color: Colors.white70),
+                // Demo credentials
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Column(
+                    children: [
+                      Text(
+                        'Demo Credentials',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Username: driver1',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      Text(
+                        'Password: driver123',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ),
                 ),
               ],

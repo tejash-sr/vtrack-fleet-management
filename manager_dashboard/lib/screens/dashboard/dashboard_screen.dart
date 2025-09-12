@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../services/firestore_service.dart';
+import '../../services/dashboard_service.dart';
 import '../../services/realtime_service.dart';
 import '../../services/auth_service.dart';
 import '../fleet_map/fleet_map_screen.dart';
@@ -36,10 +36,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadData() async {
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
+    final dashboardService = Provider.of<DashboardService>(context, listen: false);
     final realtimeService = Provider.of<RealtimeService>(context, listen: false);
     
-    await firestoreService.loadAllData();
+    await dashboardService.loadAllData();
     realtimeService.startListeningToFleetLocations();
     realtimeService.startListeningToSOSAlerts();
   }

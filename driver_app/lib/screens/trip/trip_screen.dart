@@ -6,7 +6,7 @@ import 'dart:math';
 import 'dart:async';
 import 'package:geocoding/geocoding.dart';
 import '../../services/location_service.dart';
-import '../../services/firestore_service.dart';
+import '../../services/trip_service.dart';
 import '../../services/auth_service.dart';
 
 class TripScreen extends StatefulWidget {
@@ -48,10 +48,9 @@ class _TripScreenState extends State<TripScreen> {
 
   void _onLocationUpdate() async {
     final locationService = Provider.of<LocationService>(context, listen: false);
-    final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-    final authService = Provider.of<AuthService>(context, listen: false);
+    final tripService = Provider.of<TripService>(context, listen: false);
     
-    if (firestoreService.isTripActive && locationService.currentPosition != null) {
+    if (tripService.isTripActive && locationService.currentPosition != null) {
       final position = locationService.currentPosition!;
       final newPoint = LatLng(position.latitude, position.longitude);
       
@@ -66,10 +65,14 @@ class _TripScreenState extends State<TripScreen> {
         }
       });
       
-      // Add route point to Firestore
-      if (authService.user != null) {
-        await locationService.addRoutePoint(authService.user!.uid, position.latitude, position.longitude);
-      }
+      // Update location via API
+      await tripService.updateLocation(
+        lat: position.latitude,
+        lng: position.longitude,
+        speed: position.speed,
+        heading: position.heading,
+        accuracy: position.accuracy,
+      );
     }
   }
 
@@ -235,7 +238,7 @@ class _TripScreenState extends State<TripScreen> {
         backgroundColor: Colors.blue[900],
         foregroundColor: Colors.white,
         actions: [
-          if (!Provider.of<FirestoreService>(context, listen: false).isTripActive)
+          if (!Provider.of<TripService>(context, listen: false).isTripActive)
             IconButton(
               icon: const Icon(Icons.add_location),
               onPressed: () {
@@ -247,8 +250,8 @@ class _TripScreenState extends State<TripScreen> {
             ),
         ],
       ),
-      body: Consumer3<LocationService, FirestoreService, AuthService>(
-        builder: (context, locationService, firestoreService, authService, child) {
+      body: Consumer3<LocationService, TripService, AuthService>(
+        builder: (context, locationService, tripService, authService, child) {
           final currentPosition = locationService.currentPosition;
           final center = currentPosition != null 
               ? LatLng(currentPosition.latitude, currentPosition.longitude)
@@ -258,7 +261,7 @@ class _TripScreenState extends State<TripScreen> {
             children: [
               // Map Section
               Expanded(
-                flex: firestoreService.isTripActive ? 5 : 3,
+                flex: tripService.isTripActive ? 5 : 3,
                 child: Card(
                   margin: const EdgeInsets.all(16.0),
                   child: ClipRRect(
@@ -344,7 +347,7 @@ class _TripScreenState extends State<TripScreen> {
               ),
 
               // Destination Input Section
-              if (_showDestinationInput && !firestoreService.isTripActive)
+              if (_showDestinationInput && !tripService.isTripActive)
                 Container(
                   margin: EdgeInsets.symmetric(
                     horizontal: MediaQuery.of(context).size.width > 600 ? 32.0 : 16.0,
@@ -539,7 +542,7 @@ class _TripScreenState extends State<TripScreen> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: firestoreService.isTripActive 
+                                color: tripService.isTripActive 
                                     ? Colors.green 
                                     : Colors.grey,
                                 shape: BoxShape.circle,
@@ -547,7 +550,7 @@ class _TripScreenState extends State<TripScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              firestoreService.isTripActive 
+                              tripService.isTripActive 
                                   ? 'Trip Active' 
                                   : 'No Active Trip',
                               style: const TextStyle(
@@ -558,10 +561,10 @@ class _TripScreenState extends State<TripScreen> {
                           ],
                         ),
                         
-                        if (firestoreService.isTripActive) ...[
+                        if (tripService.isTripActive) ...[
                           const SizedBox(height: 10),
                           Text(
-                            'Trip ID: ${firestoreService.currentTripId}',
+                            'Trip ID: ${tripService.currentTripId}',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -604,7 +607,7 @@ class _TripScreenState extends State<TripScreen> {
               ),
 
               // Trip Statistics
-              if (firestoreService.isTripActive) ...[
+              if (tripService.isTripActive) ...[
                 Container(
                   margin: EdgeInsets.symmetric(
                     horizontal: MediaQuery.of(context).size.width > 600 ? 24.0 : 16.0,
@@ -762,12 +765,12 @@ class _TripScreenState extends State<TripScreen> {
                 ),
                 child: Column(
                   children: [
-                    if (!firestoreService.isTripActive) ...[
+                    if (!tripService.isTripActive) ...[
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: locationService.currentPosition != null 
-                              ? () => _startTrip(locationService, firestoreService, authService)
+                              ? () => _startTrip(locationService, tripService, authService)
                               : null,
                           icon: const Icon(Icons.play_arrow),
                           label: const Text('Start Trip'),
@@ -783,7 +786,7 @@ class _TripScreenState extends State<TripScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: locationService.currentPosition != null 
-                              ? () => _endTrip(locationService, firestoreService, authService)
+                              ? () => _endTrip(locationService, tripService, authService)
                               : null,
                           icon: const Icon(Icons.stop),
                           label: const Text('End Trip'),
@@ -807,20 +810,27 @@ class _TripScreenState extends State<TripScreen> {
   
   Future<void> _startTrip(
     LocationService locationService,
-    FirestoreService firestoreService,
+    TripService tripService,
     AuthService authService,
   ) async {
     if (authService.user == null) return;
     
-    final position = locationService.currentPosition!;
-    final tripId = await firestoreService.startTrip(
-      driverId: authService.user!.uid,
-      latitude: position.latitude,
-      longitude: position.longitude,
-      destinationLat: _destination?.latitude,
-      destinationLng: _destination?.longitude,
-      destinationName: _destinationController.text.isNotEmpty ? _destinationController.text : null,
-    );
+    // Load vehicles first
+    await tripService.loadVehicles();
+    
+    if (tripService.vehicles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No vehicles assigned to you. Please contact manager.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+    
+    // Use first available vehicle
+    final vehicleId = tripService.vehicles.first['_id'];
+    final tripId = await tripService.startTrip(vehicleId);
     
     if (!mounted) return;
     
@@ -828,7 +838,7 @@ class _TripScreenState extends State<TripScreen> {
       setState(() {
         _tripStartTime = DateTime.now();
         _totalDistance = 0.0;
-        _routePoints = [LatLng(position.latitude, position.longitude)];
+        _routePoints = [LatLng(locationService.currentPosition!.latitude, locationService.currentPosition!.longitude)];
       });
       
       // Start timer for real-time updates
@@ -839,7 +849,7 @@ class _TripScreenState extends State<TripScreen> {
       });
       
       // Start location tracking
-      await locationService.startLocationTracking(authService.user!.uid);
+      await locationService.startLocationTracking(authService.user!['id']);
       
       if (!mounted) return;
       
@@ -861,20 +871,13 @@ class _TripScreenState extends State<TripScreen> {
   
   Future<void> _endTrip(
     LocationService locationService,
-    FirestoreService firestoreService,
+    TripService tripService,
     AuthService authService,
   ) async {
-    final position = locationService.currentPosition!;
-    
     // Stop location tracking
     await locationService.stopLocationTracking();
     
-    final success = await firestoreService.endTrip(
-      latitude: position.latitude,
-      longitude: position.longitude,
-      totalDistance: _totalDistance,
-      driverId: authService.user?.uid,
-    );
+    final success = await tripService.endTrip();
     
     if (!mounted) return;
     

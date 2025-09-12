@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
 import 'services/location_service.dart';
-import 'services/firestore_service.dart';
+import 'services/trip_service.dart';
 import 'services/storage_service.dart';
 import 'services/realtime_service.dart';
 import 'screens/splash_screen.dart';
@@ -37,7 +37,7 @@ class FleetDriverApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => LocationService()),
-        ChangeNotifierProvider(create: (_) => FirestoreService()),
+        ChangeNotifierProvider(create: (_) => TripService()),
         ChangeNotifierProvider(create: (_) => StorageService()),
         ChangeNotifierProvider(create: (_) => RealtimeService()),
       ],

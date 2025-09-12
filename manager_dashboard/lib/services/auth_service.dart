@@ -1,69 +1,57 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'api_service.dart';
 
 class AuthService extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  User? _user;
+  Map<String, dynamic>? _user;
   Map<String, dynamic>? _managerData;
   bool _isLoading = false;
   
-  User? get user => _user;
+  Map<String, dynamic>? get user => _user;
   Map<String, dynamic>? get managerData => _managerData;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
   
   AuthService() {
-    _auth.authStateChanges().listen(_onAuthStateChanged);
+    // Check if user is already logged in
+    _checkExistingAuth();
   }
   
-  void _onAuthStateChanged(User? user) {
-    _user = user;
-    if (user != null) {
-      _loadManagerData();
-    } else {
-      _managerData = null;
-    }
-    notifyListeners();
-  }
-  
-  Future<void> _loadManagerData() async {
-    if (_user == null) return;
-    
-    try {
-      final doc = await _firestore
-          .collection('managers')
-          .doc(_user!.uid)
-          .get();
-      
-      if (doc.exists) {
-        _managerData = doc.data();
-      }
-    } catch (e) {
-      debugPrint('Error loading manager data: $e');
+  Future<void> _checkExistingAuth() async {
+    if (ApiService.token != null && ApiService.userId != null) {
+      _user = {
+        'id': ApiService.userId,
+        'username': 'Manager',
+        'role': ApiService.userRole,
+      };
+      _managerData = {
+        'username': 'Manager',
+        'role': ApiService.userRole,
+        'status': 'online',
+      };
+      notifyListeners();
     }
   }
   
-  Future<String?> signInWithEmailAndPassword(String email, String password) async {
+  Future<String?> signInWithUsernameAndPassword(String username, String password) async {
     _isLoading = true;
     notifyListeners();
     
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final result = await ApiService.login(username, password);
       
-      // Create manager document if it doesn't exist
-      if (userCredential.user != null) {
-        await _createManagerDocument(userCredential.user!);
+      if (result != null) {
+        _user = result['user'];
+        _managerData = {
+          'username': result['user']['username'],
+          'role': result['user']['role'],
+          'status': 'online',
+        };
+        return null; // Success
+      } else {
+        return 'Login failed. Please check your credentials.';
       }
-      
-      return null; // Success
     } catch (e) {
-      debugPrint('Email sign in error: $e');
+      debugPrint('Sign in error: $e');
       return e.toString();
     } finally {
       _isLoading = false;
@@ -71,33 +59,12 @@ class AuthService extends ChangeNotifier {
     }
   }
   
-  Future<void> _createManagerDocument(User user) async {
-    try {
-      final managerRef = _firestore.collection('managers').doc(user.uid);
-      final doc = await managerRef.get();
-      
-      if (!doc.exists) {
-        await managerRef.set({
-          'name': user.displayName ?? 'Manager',
-          'email': user.email,
-          'role': 'manager',
-          'createdAt': FieldValue.serverTimestamp(),
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
-      } else {
-        // Update last login
-        await managerRef.update({
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      debugPrint('Error creating manager document: $e');
-    }
-  }
-  
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      ApiService.clearAuthData();
+      _user = null;
+      _managerData = null;
+      notifyListeners();
     } catch (e) {
       debugPrint('Sign out error: $e');
     }

@@ -1,122 +1,138 @@
-# 🚛 Fleet Management System
+# 🚛 VTrack Fleet Management System
 
-A comprehensive Fleet Management System built with **Flutter** and **Firebase**, featuring real-time GPS tracking, expense management, and SOS alerts.
+A comprehensive Fleet Management System built with **Flutter** and **Node.js/Express**, featuring real-time GPS tracking, expense management, and SOS alerts.
 
 ## 🛠 Tech Stack
 
-- **Backend**: Firebase (Firestore, Authentication, Storage, Cloud Functions, Realtime Database)
-- **Driver App**: Flutter (Android APK)
-- **Manager Dashboard**: Flutter Web
+- **Backend**: Node.js/Express + MongoDB + Socket.io
+- **Driver App**: Flutter (Android/Web)
+- **Manager Dashboard**: Flutter Web/Desktop
 - **Maps**: OpenStreetMap (free)
-- **Real-time**: Firebase Realtime Database + Firestore
+- **Real-time**: Socket.io for live updates
+- **Authentication**: JWT-based with username/password
 
 ## 📱 Features
 
-### Driver App (Android)
-- ✅ Phone authentication with OTP
+### Driver App (Android/Web)
+- ✅ Username/password authentication
 - ✅ Real-time GPS tracking
 - ✅ Trip management (start/end with route tracking)
+- ✅ Vehicle assignment checking
 - ✅ Expense tracking with photo receipts
 - ✅ SOS emergency alerts
-- ✅ Offline data synchronization
 - ✅ Clean, intuitive UI
 
-### Manager Dashboard (Web)
+### Manager Dashboard (Web/Desktop)
+- ✅ Admin authentication
+- ✅ Driver management (add new drivers)
+- ✅ Vehicle management and assignment
 - ✅ Real-time fleet map with OpenStreetMap
 - ✅ Live driver location tracking
-- ✅ SOS alert notifications with sound
 - ✅ Trip history and analytics
-- ✅ Expense management and export
 - ✅ Excel export functionality
-- ✅ Responsive web design
+- ✅ Responsive design
 
 ## 🚀 Quick Start
 
-### 1. Firebase Setup
-```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login and create project
-firebase login
-firebase projects:create fleet-management-system
-
-# Initialize Firebase
-firebase init
+### Option 1: Automated Setup (Windows)
+```powershell
+# Run the setup script
+.\setup_integration.ps1
 ```
 
-### 2. Driver App
+### Option 2: Manual Setup
+
+#### 1. Backend Setup
+```bash
+cd backend
+npm install
+echo "MONGO_URI=mongodb://localhost:27017/fleet_management
+JWT_SECRET=your_jwt_secret_key_here_change_this_in_production
+PORT=5000" > .env
+npm start
+```
+
+#### 2. Driver App
 ```bash
 cd driver_app
 flutter pub get
-flutterfire configure --project=fleet-management-system
-flutter build apk --release
+flutter run
 ```
 
-### 3. Manager Dashboard
+#### 3. Manager Dashboard
 ```bash
 cd manager_dashboard
 flutter pub get
-flutterfire configure --project=fleet-management-system
 flutter run -d chrome
 ```
+
+### Prerequisites
+- Node.js (v14+)
+- Flutter (v3.0+)
+- MongoDB (running locally)
 
 ## 📁 Project Structure
 
 ```
-fleet-management-system/
-├── driver_app/                    # Flutter Android App
-├── manager_dashboard/             # Flutter Web App
-├── firebase/                      # Firebase Configuration
-├── docs/                          # Documentation
+VTrack---Fleet-Management-App/
+├── backend/                       # Node.js/Express API
+│   ├── models/                    # MongoDB models
+│   ├── routes/                    # API routes
+│   ├── middleware/                # Auth middleware
+│   └── server.js                  # Main server file
+├── driver_app/                    # Flutter Driver App
+├── manager_dashboard/             # Flutter Manager Dashboard
+├── INTEGRATION_GUIDE.md           # Detailed setup guide
+├── setup_integration.ps1          # Windows setup script
 └── README.md
 ```
 
 ## 🔧 Configuration
 
-### Firebase Services Required
-- **Authentication** (Phone & Email/Password)
-- **Firestore Database**
-- **Cloud Storage**
-- **Realtime Database**
-- **Cloud Functions**
+### Backend Services Required
+- **MongoDB** (local or cloud)
+- **Node.js/Express** API server
+- **Socket.io** for real-time updates
+- **JWT** for authentication
 
 ### Environment Setup
-1. Create Firebase project
-2. Enable required services
-3. Configure FlutterFire for both apps
-4. Deploy security rules
-5. Set up test data
+1. Install MongoDB and start service
+2. Install Node.js dependencies
+3. Configure environment variables
+4. Start backend server
+5. Run Flutter apps
 
 ## 📊 Database Structure
 
-### Firestore Collections
-- `drivers/` - Driver profiles and status
-- `trips/` - Trip records with routes
+### MongoDB Collections
+- `users/` - User accounts (drivers and admins)
+- `vehicles/` - Fleet vehicles with assignments
+- `trips/` - Trip records with GPS routes
 - `expenses/` - Expense tracking with photos
 - `alerts/` - SOS and emergency alerts
 
-### Realtime Database
-- `fleet_locations/` - Real-time driver locations
-- `sos_alerts/` - Live SOS notifications
+### Real-time Updates
+- Socket.io for live location updates
+- Real-time trip status changes
+- Live SOS alert notifications
 
 ## 🔐 Security
 
-- Firebase Security Rules for data access control
-- Role-based authentication (Driver/Manager)
-- Secure file uploads with validation
-- Encrypted data transmission
+- JWT-based authentication with role-based access
+- Password hashing with bcrypt
+- API endpoint protection with middleware
+- Secure data transmission over HTTPS
 
 ## 📈 Demo
 
 ### Test Accounts
-**Manager:**
-- Email: `manager@fleet.com`
-- Password: `manager123`
+**Manager/Admin:**
+- Username: `admin`
+- Password: `admin123`
 
 **Driver:**
-- Phone: `+1234567890`
-- OTP: `123456`
+- Username: `driver1`
+- Password: `driver123`
 
 ### Demo Flow
 1. Manager Dashboard overview
@@ -142,7 +158,7 @@ firebase deploy --only hosting
 
 ## 📋 Documentation
 
-- [Firebase Setup Guide](firebase_setup.md)
+- [Integration Guide](INTEGRATION_GUIDE.md) - Detailed setup and configuration
 - [Build Commands](BUILD_COMMANDS.md)
 - [Demo Script](DEMO_SCRIPT.md)
 - [Project Structure](PROJECT_STRUCTURE.md)
@@ -150,25 +166,27 @@ firebase deploy --only hosting
 ## 🧪 Testing
 
 ### Driver App Testing
-- Phone authentication flow
+- Username/password authentication
 - GPS location accuracy
-- Camera functionality
-- Offline synchronization
+- Trip management flow
+- Vehicle assignment checking
 - SOS alert system
 
 ### Manager Dashboard Testing
+- Admin authentication
+- Driver management
 - Real-time map updates
 - Data export functionality
 - Responsive design
-- Cross-browser compatibility
 
 ## 🔄 Development Workflow
 
-1. **Setup**: Clone repo and configure Firebase
-2. **Development**: Use Flutter hot reload for rapid development
-3. **Testing**: Run on physical devices for accurate testing
-4. **Build**: Generate APK and web builds
-5. **Deploy**: Deploy to Firebase Hosting
+1. **Setup**: Clone repo and start MongoDB
+2. **Backend**: Start Node.js server with `npm start`
+3. **Frontend**: Use Flutter hot reload for rapid development
+4. **Testing**: Run on physical devices for accurate testing
+5. **Build**: Generate APK and web builds
+6. **Deploy**: Deploy to your preferred hosting platform
 
 ## 📱 Supported Platforms
 
@@ -186,10 +204,11 @@ firebase deploy --only hosting
 
 ## 💰 Cost Considerations
 
-- **Firebase**: Pay-as-you-go with generous free tier
+- **MongoDB**: Free local installation or MongoDB Atlas free tier
+- **Node.js**: Free and open-source
 - **OpenStreetMap**: Free map tiles
 - **Development**: Flutter is free and open-source
-- **Hosting**: Firebase Hosting with free tier
+- **Hosting**: Deploy to any cloud provider
 
 ## 🔮 Future Enhancements
 
@@ -222,14 +241,14 @@ For support and questions:
 
 ## 🎯 Key Benefits
 
-- **Real-time Tracking**: Live fleet monitoring
-- **Cost Effective**: Free map tiles, Firebase free tier
-- **Scalable**: Firebase auto-scaling
-- **Secure**: Enterprise-grade security
-- **Offline Ready**: Works without internet
-- **Easy Deployment**: One-click deployment
-- **Cross-platform**: Android + Web
+- **Real-time Tracking**: Live fleet monitoring with Socket.io
+- **Cost Effective**: Free map tiles, open-source backend
+- **Scalable**: MongoDB and Node.js scale easily
+- **Secure**: JWT authentication and role-based access
+- **Easy Setup**: Automated setup script available
+- **Cross-platform**: Android + Web + Desktop
+- **Manager Control**: Only managers can add new drivers
 
 ---
 
-**Built with ❤️ using Flutter & Firebase**
+**Built with ❤️ using Flutter & Node.js/Express**

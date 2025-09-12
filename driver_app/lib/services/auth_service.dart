@@ -1,98 +1,56 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
 class AuthService extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
-  User? _user;
+  Map<String, dynamic>? _user;
   Map<String, dynamic>? _driverData;
   bool _isLoading = false;
   
-  User? get user => _user;
+  Map<String, dynamic>? get user => _user;
   Map<String, dynamic>? get driverData => _driverData;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
   
   AuthService() {
-    _auth.authStateChanges().listen(_onAuthStateChanged);
+    // Check if user is already logged in
+    _checkExistingAuth();
   }
   
-  void _onAuthStateChanged(User? user) {
-    _user = user;
-    if (user != null) {
-      _loadDriverData();
-    } else {
-      _driverData = null;
-    }
-    notifyListeners();
-  }
-  
-  Future<void> _loadDriverData() async {
-    if (_user == null) return;
-    
-    try {
-      final doc = await _firestore
-          .collection('drivers')
-          .doc(_user!.uid)
-          .get();
-      
-      if (doc.exists) {
-        _driverData = doc.data();
-      }
-    } catch (e) {
-      debugPrint('Error loading driver data: $e');
-    }
-  }
-  
-  Future<String?> signUp(String username, String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      // Create user with email and password
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (userCredential.user != null) {
-        // Update display name
-        await userCredential.user!.updateDisplayName(username);
-        
-        // Create driver document
-        await _createDriverDocument(userCredential.user!, username, email);
-      }
-      
-      return null; // Success
-    } catch (e) {
-      debugPrint('Sign up error: $e');
-      return e.toString();
-    } finally {
-      _isLoading = false;
+  Future<void> _checkExistingAuth() async {
+    if (ApiService.token != null && ApiService.userId != null) {
+      _user = {
+        'id': ApiService.userId,
+        'username': 'Driver',
+        'role': ApiService.userRole,
+      };
+      _driverData = {
+        'username': 'Driver',
+        'role': ApiService.userRole,
+        'status': 'online',
+      };
       notifyListeners();
     }
   }
   
-  Future<String?> signIn(String email, String password) async {
+  Future<String?> signIn(String username, String password) async {
     _isLoading = true;
     notifyListeners();
     
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final result = await ApiService.login(username, password);
       
-      if (userCredential.user != null) {
-        await _loadDriverData();
-        // Set driver status to online when signing in
-        await updateDriverStatus('online');
+      if (result != null) {
+        _user = result['user'];
+        _driverData = {
+          'username': result['user']['username'],
+          'role': result['user']['role'],
+          'status': 'online',
+        };
+        return null; // Success
+      } else {
+        return 'Login failed. Please check your credentials.';
       }
-      
-      return null; // Success
     } catch (e) {
       debugPrint('Sign in error: $e');
       return e.toString();
@@ -102,68 +60,27 @@ class AuthService extends ChangeNotifier {
     }
   }
   
-  Future<void> _createDriverDocument(User user, String username, String email) async {
-    try {
-      final driverRef = _firestore.collection('drivers').doc(user.uid);
-      final doc = await driverRef.get();
-      
-      if (!doc.exists) {
-        await driverRef.set({
-          'username': username,
-          'email': email,
-          'name': username,
-          'status': 'online',
-          'isActive': true,
-          'points': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-          'lastUpdate': FieldValue.serverTimestamp(),
-        });
-      }
-    } catch (e) {
-      debugPrint('Error creating driver document: $e');
-    }
-  }
-  
   Future<void> updateDriverStatus(String status) async {
-    if (_user == null) return;
-    
-    try {
-      await _firestore.collection('drivers').doc(_user!.uid).update({
-        'status': status,
-        'lastUpdate': FieldValue.serverTimestamp(),
-      });
-      
-      if (_driverData != null) {
-        _driverData!['status'] = status;
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error updating driver status: $e');
+    if (_driverData != null) {
+      _driverData!['status'] = status;
+      notifyListeners();
     }
   }
 
   Future<void> updateDriverPoints(int points) async {
-    if (_user == null) return;
-    
-    try {
-      await _firestore.collection('drivers').doc(_user!.uid).update({
-        'points': points,
-        'lastUpdate': FieldValue.serverTimestamp(),
-      });
-      
-      if (_driverData != null) {
-        _driverData!['points'] = points;
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('Error updating driver points: $e');
+    if (_driverData != null) {
+      _driverData!['points'] = points;
+      notifyListeners();
     }
   }
   
   Future<void> signOut() async {
     try {
       await updateDriverStatus('offline');
-      await _auth.signOut();
+      ApiService.clearAuthData();
+      _user = null;
+      _driverData = null;
+      notifyListeners();
     } catch (e) {
       debugPrint('Sign out error: $e');
     }

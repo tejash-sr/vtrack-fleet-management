@@ -11,14 +11,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   
   bool _isPasswordVisible = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -28,8 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
     
     final authService = Provider.of<AuthService>(context, listen: false);
     
-    final result = await authService.signInWithEmailAndPassword(
-      _emailController.text.trim(),
+    final result = await authService.signInWithUsernameAndPassword(
+      _usernameController.text.trim(),
       _passwordController.text.trim(),
     );
     
@@ -103,15 +103,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   const SizedBox(height: 40),
                   
-                  // Email Input
+                  // Username Input
                   TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
+                    controller: _usernameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      labelText: 'Email',
-                      hintText: 'Enter your email',
-                      prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                      labelText: 'Username',
+                      hintText: 'Enter your username',
+                      prefixIcon: const Icon(Icons.person, color: Colors.white70),
                       labelStyle: const TextStyle(color: Colors.white70),
                       hintStyle: const TextStyle(color: Colors.white54),
                       border: OutlineInputBorder(
@@ -129,10 +128,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
+                        return 'Please enter your username';
                       }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
+                      if (value.trim().length < 3) {
+                        return 'Username must be at least 3 characters';
                       }
                       return null;
                     },
@@ -237,11 +236,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(height: 8),
                         Text(
-                          'Email: manager@fleet.com',
+                          'Username: admin',
                           style: TextStyle(color: Colors.white70),
                         ),
                         Text(
-                          'Password: manager123',
+                          'Password: admin123',
                           style: TextStyle(color: Colors.white70),
                         ),
                       ],

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
-import 'services/firestore_service.dart';
+import 'services/dashboard_service.dart';
 import 'services/realtime_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -30,7 +30,7 @@ class FleetManagerDashboard extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
-        ChangeNotifierProvider(create: (_) => FirestoreService()),
+        ChangeNotifierProvider(create: (_) => DashboardService()),
         ChangeNotifierProvider(create: (_) => RealtimeService()),
       ],
       child: MaterialApp(
